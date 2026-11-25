@@ -1,0 +1,9 @@
+{
+  "Library": "rpp_navigation",
+  "PluginTypes": [
+    {"Type": "folder_scan", "Path": "plugin_types"}
+  ],
+  "Plugins": [
+    {"Type": "folder_scan", "Path": "plugins"}
+  ]
+}

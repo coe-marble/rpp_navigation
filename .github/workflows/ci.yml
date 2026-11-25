@@ -1,0 +1,46 @@
+name: Navigation tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    container:
+      # Public image: no registry credentials or repository secret required.
+      image: ghcr.io/coe-marble/rpp-test-container:lyrical-ubuntu26.04-capnp1.1.0-v1
+    defaults:
+      run:
+        shell: bash
+    env:
+      ROS_DISTRO: lyrical
+    steps:
+      - name: Check out repository under test
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build rpp_navigation
+        run: |
+          source /opt/ros/lyrical/setup.bash
+          colcon build --base-paths . --packages-select rpp_navigation --symlink-install --cmake-args -DBUILD_TESTING=ON -DPython3_EXECUTABLE=/opt/rpp-test-venv/bin/python
+      - name: Run unit tests
+        run: |
+          source /opt/ros/lyrical/setup.bash
+          source install/setup.bash
+          colcon test --packages-select rpp_navigation --event-handlers console_direct+ --return-code-on-test-failure
+      - name: Report test results
+        if: ${{ !cancelled() }}
+        run: colcon test-result --verbose
